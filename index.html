@@ -1337,6 +1337,55 @@
 
         // Initialize the app
         initializeApp();
+    // Service Worker Registration
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/sw.js')
+      .then(function(registration) {
+        console.log('Service Worker registered with scope:', registration.scope);
+        
+        // Check for updates
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          console.log('Service Worker update found!');
+          
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              console.log('New content is available; please refresh.');
+              // You can show an update notification here
+              showUpdateNotification();
+            }
+          });
+        });
+      })
+      .catch(function(error) {
+        console.log('Service Worker registration failed:', error);
+      });
+  });
+
+  // Listen for claiming of service worker
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!refreshing) {
+      window.location.reload();
+      refreshing = true;
+    }
+  });
+}
+
+function showUpdateNotification() {
+  // You can implement a custom update notification here
+  if (confirm('A new version is available. Reload to update?')) {
+    window.location.reload();
+  }
+}
+
+// Background Sync registration (if needed)
+if ('sync' in registration) {
+  registration.sync.register('background-sync')
+    .then(() => console.log('Background sync registered'))
+    .catch(err => console.log('Background sync registration failed', err));
+}
     </script>
 </body>
 </html>
