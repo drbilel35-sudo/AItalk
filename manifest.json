@@ -1,8 +1,8 @@
 {
   "name": "AI Assistant",
-  "short_name": "AIAssistant",
+  "short_name": "AI Assistant",
   "description": "Real-time AI assistant with voice and expressions",
-  "start_url": "/",
+  "start_url": "/https://aitalk-kydj.onrender.com",
   "display": "standalone",
   "background_color": "#1a2a6c",
   "theme_color": "#4a6fa5",
