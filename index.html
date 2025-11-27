@@ -1,0 +1,2008 @@
+<meta name='viewport' content='width=device-width, initial-scale=1'/> <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Assistant - Real-time Voice & Expressions</title>
+    <meta name="description" content="Real-time conversational AI with animated face and voice interaction">
+    <meta name="theme-color" content="#4a6fa5">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="AI Assistant">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #4a6fa5);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            cursor: default;
+            overflow-x: hidden;
+        }
+
+        /* App Header */
+        .app-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(26, 42, 108, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px 20px;
+            z-index: 1000;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo {
+            width: 40px;
+            height: 40px;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+        }
+
+        .header-text {
+            text-align: left;
+        }
+
+        .app-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(45deg, #fff, #a8d8ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 0;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .status-online {
+            color: #4ade80;
+        }
+
+        .status-offline {
+            color: #f87171;
+        }
+
+        .status-groq {
+            color: #10b981 !important;
+        }
+
+        .status-openai {
+            color: #8b5cf6 !important;
+        }
+
+        .status-local {
+            color: #f59e0b !important;
+        }
+
+        /* Main App Layout */
+        .app-container {
+            display: flex;
+            flex: 1;
+            margin-top: 70px; /* Account for fixed header */
+            height: calc(100vh - 70px);
+        }
+
+        /* Fixed Face Section - IMPROVED */
+        .face-section {
+            position: fixed;
+            left: 0;
+            top: 70px;
+            width: 350px;
+            height: calc(100vh - 70px);
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            z-index: 900;
+            overflow-y: auto;
+            /* Ensure it stays fixed while scrolling */
+            position: -webkit-sticky; /* For Safari */
+            position: sticky;
+        }
+
+        .face-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .face-wrapper {
+            position: relative;
+            width: 280px;
+            height: 280px;
+        }
+
+        .human-face {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            object-fit: cover;
+        }
+
+        /* Eye Tracking System */
+        .eye-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .eye {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: white;
+            border-radius: 50%;
+            overflow: hidden;
+            box-shadow: 0 0 3px rgba(0,0,0,0.25);
+        }
+
+        .eye-left {
+            top: 28%;
+            left: 39.4%;
+        }
+
+        .eye-right {
+            top: 28%;
+            left: 54.1%;
+        }
+
+        .pupil {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #1a2a6c;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            transition: transform 0.12s ease-out;
+            box-shadow: 0 0 2px rgba(0,0,0,0.5);
+        }
+
+        /* Mouth */
+        .mouth {
+            position: absolute;
+            top: 44.5%;
+            left: 46%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 10px;
+            background: #ff6b8b;
+            border-radius: 50%;
+            display: none;
+            z-index: 6;
+            box-shadow: 0 0 4px rgba(0,0,0,0.3);
+        }
+
+        .face-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            mix-blend-mode: overlay;
+            z-index: 2;
+        }
+
+        .face-overlay.active {
+            opacity: 0.6;
+        }
+
+        .face-status {
+            position: absolute;
+            bottom: 15px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 8px;
+            border-radius: 8px;
+            margin: 0 15px;
+            z-index: 3;
+            font-size: 0.8rem;
+        }
+
+        .expression-indicator {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            z-index: 3;
+        }
+
+        .robot-info {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            z-index: 3;
+        }
+
+        /* Controls Panel */
+        .controls-panel {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 15px;
+        }
+
+        .instruction-input {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        input, select {
+            flex: 1;
+            padding: 10px 12px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            font-size: 0.9rem;
+            outline: none;
+            color: #333;
+        }
+
+        button {
+            padding: 10px 15px;
+            background: #4a6fa5;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: bold;
+            transition: all 0.3s;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        button:hover {
+            background: #5a7fb5;
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        .voice-btn {
+            background: #ff6b6b;
+            width: 100%;
+            justify-content: center;
+            margin-top: 8px;
+        }
+
+        .voice-btn:hover {
+            background: #ff7b7b;
+        }
+
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 0.85rem;
+        }
+
+        .commands {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+            margin-top: 12px;
+        }
+
+        .command-btn {
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.8rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .command-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: scale(1.03);
+        }
+
+        /* Scrollable Content Section - IMPROVED */
+        .content-section {
+            margin-left: 350px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 70px);
+            padding: 20px;
+            overflow-y: auto;
+            /* Ensure content scrolls independently */
+            position: relative;
+            z-index: 800;
+        }
+
+        .chat-container {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+            margin-bottom: 15px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+            margin-bottom: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .message {
+            padding: 10px 12px;
+            border-radius: 12px;
+            max-width: 85%;
+            word-wrap: break-word;
+            font-size: 0.9rem;
+            animation: messageAppear 0.3s ease-out;
+        }
+
+        @keyframes messageAppear {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .user-message {
+            background: rgba(74, 111, 165, 0.7);
+            align-self: flex-end;
+            border-bottom-right-radius: 5px;
+        }
+
+        .robot-message {
+            background: rgba(255, 255, 255, 0.2);
+            align-self: flex-start;
+            border-bottom-left-radius: 5px;
+        }
+
+        .chat-input {
+            display: flex;
+            gap: 8px;
+        }
+
+        .chat-input input {
+            flex: 1;
+        }
+
+        .conversation-controls {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .conversation-btn {
+            flex: 1;
+            padding: 8px;
+            font-size: 0.8rem;
+        }
+
+        .api-key-section {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .api-key-input {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .api-key-input input {
+            flex: 1;
+        }
+
+        .voice-test {
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .voice-test-btn {
+            width: 100%;
+            margin-top: 5px;
+        }
+
+        /* Hide features section for professional look */
+        .instructions {
+            display: none;
+        }
+
+        /* Voice status styles */
+        .voice-status {
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin: 5px 0;
+            font-size: 0.8rem;
+            text-align: center;
+        }
+        
+        .voice-listening {
+            background: rgba(76, 175, 80, 0.3);
+            border-left: 3px solid #4ade80;
+            animation: pulse 1.5s infinite;
+        }
+        
+        .voice-error {
+            background: rgba(244, 67, 54, 0.3);
+            border-left: 3px solid #f44336;
+        }
+        
+        .voice-ready {
+            background: rgba(33, 150, 243, 0.3);
+            border-left: 3px solid #2196F3;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .typing-indicator {
+            display: inline-block;
+            position: relative;
+            width: 50px;
+            height: 18px;
+        }
+
+        .typing-indicator span {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: white;
+            margin: 0 2px;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        .fallback-notice {
+            background: rgba(255, 193, 7, 0.2);
+            border-left: 3px solid #ffc107;
+            padding: 8px 12px;
+            margin: 8px 0;
+            border-radius: 0 6px 6px 0;
+            font-size: 0.8rem;
+        }
+
+        /* Expression animations */
+        .face-happy {
+            filter: brightness(1.1) saturate(1.2);
+            transform: scale(1.05);
+        }
+
+        .face-sad {
+            filter: brightness(0.9) saturate(0.8);
+            transform: scale(0.95);
+        }
+
+        .face-thinking {
+            filter: brightness(1) contrast(1.1);
+            animation: thinking 2s infinite;
+        }
+
+        .face-talking {
+            animation: talk 0.5s infinite alternate;
+        }
+
+        .face-excited {
+            filter: brightness(1.2) saturate(1.3);
+            animation: excited 1.5s infinite alternate;
+        }
+
+        .face-confused {
+            filter: brightness(0.95) contrast(1.1);
+            animation: confused 2s infinite;
+        }
+
+        .face-surprised {
+            filter: brightness(1.1) saturate(1.1);
+            animation: surprised 0.8s ease-in-out;
+        }
+
+        @keyframes thinking {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(1deg); }
+            75% { transform: rotate(-1deg); }
+        }
+
+        @keyframes talk {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.02); }
+        }
+
+        @keyframes excited {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.05); }
+        }
+
+        @keyframes confused {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-3px); }
+            75% { transform: translateX(3px); }
+        }
+
+        @keyframes surprised {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        /* Lip sync animation */
+        @keyframes lip-sync {
+            0%, 100% { transform: scaleY(1); }
+            50% { transform: scaleY(0.3); }
+        }
+
+        .mouth.talking {
+            display: block;
+            animation: lip-sync 0.2s infinite alternate;
+        }
+
+        /* Mobile Responsive - IMPROVED */
+        @media (max-width: 1024px) {
+            .face-section {
+                width: 300px;
+            }
+            
+            .content-section {
+                margin-left: 300px;
+            }
+            
+            .face-wrapper {
+                width: 240px;
+                height: 240px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .app-container {
+                flex-direction: column;
+            }
+            
+            .face-section {
+                position: relative;
+                width: 100%;
+                height: auto;
+                top: 0;
+                /* Remove fixed positioning on mobile */
+                position: relative;
+            }
+            
+            .content-section {
+                margin-left: 0;
+                height: auto;
+            }
+            
+            .app-header {
+                padding: 10px 15px;
+            }
+            
+            .app-container {
+                margin-top: 60px;
+                height: auto;
+            }
+        }
+
+        .provider-info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 8px;
+            font-size: 0.8rem;
+        }
+
+        .provider-info ul {
+            margin: 5px 0 0 15px;
+        }
+
+        .provider-info li {
+            margin-bottom: 3px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Fixed App Header -->
+    <header class="app-header">
+        <div class="logo-header">
+            <!-- AI Assistant Logo -->
+            <svg class="logo" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="faceGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#667eea" />
+                        <stop offset="100%" stop-color="#764ba2" />
+                    </linearGradient>
+                    <radialGradient id="eyeGradient" cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" stop-color="#ffffff" />
+                        <stop offset="100%" stop-color="#f0f8ff" />
+                    </radialGradient>
+                    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />
+                        <feMerge> 
+                            <feMergeNode in="blur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                    </filter>
+                </defs>
+                
+                <!-- Main Face Circle -->
+                <circle cx="100" cy="100" r="80" fill="url(#faceGradient)" stroke="#fff" stroke-width="2" filter="url(#glow)"/>
+                
+                <!-- Eyes -->
+                <ellipse cx="75" cy="85" rx="12" ry="15" fill="url(#eyeGradient)"/>
+                <ellipse cx="125" cy="85" rx="12" ry="15" fill="url(#eyeGradient)"/>
+                
+                <!-- Pupils with Animation Effect -->
+                <circle cx="75" cy="85" r="6" fill="#1a2a6c">
+                    <animate attributeName="cy" values="85;83;85" dur="2s" repeatCount="indefinite"/>
+                </circle>
+                <circle cx="125" cy="85" r="6" fill="#1a2a6c">
+                    <animate attributeName="cy" values="85;83;85" dur="2s" repeatCount="indefinite"/>
+                </circle>
+                
+                <!-- Smiling Mouth -->
+                <path d="M70 120 Q100 140 130 120" stroke="#ff6b8b" stroke-width="6" stroke-linecap="round" fill="none">
+                    <animate attributeName="d" values="M70 120 Q100 140 130 120; M70 120 Q100 130 130 120; M70 120 Q100 140 130 120" 
+                             dur="3s" repeatCount="indefinite"/>
+                </path>
+                
+                <!-- Voice/Sound Waves -->
+                <g opacity="0.8">
+                    <path d="M160 70 Q170 70 170 80 Q170 90 160 90" stroke="#4ade80" stroke-width="3" fill="none"/>
+                    <path d="M165 60 Q180 60 180 75 Q180 90 165 90" stroke="#4ade80" stroke-width="3" fill="none"/>
+                    <path d="M170 50 Q190 50 190 75 Q190 100 170 100" stroke="#4ade80" stroke-width="3" fill="none"/>
+                </g>
+                
+                <!-- AI Circuit Pattern -->
+                <g stroke="#fff" stroke-width="1.5" opacity="0.7">
+                    <path d="M50 60 L60 60 L60 50" fill="none"/>
+                    <path d="M40 70 L50 70 L50 80" fill="none"/>
+                    <circle cx="55" cy="65" r="2" fill="#4ade80"/>
+                    <path d="M150 60 L140 60 L140 50" fill="none"/>
+                    <path d="M160 70 L150 70 L150 80" fill="none"/>
+                    <circle cx="145" cy="65" r="2" fill="#ff6b6b"/>
+                </g>
+                
+                <!-- Sparkle Elements -->
+                <g fill="#ffd700" opacity="0.9">
+                    <path d="M100 40 L102 45 L107 45 L103 48 L105 53 L100 50 L95 53 L97 48 L93 45 L98 45 Z">
+                        <animateTransform attributeName="transform" type="rotate" from="0 100 40" to="360 100 40" dur="4s" repeatCount="indefinite"/>
+                    </path>
+                    <path d="M40 100 L45 102 L45 107 L48 103 L53 105 L50 100 L53 95 L48 97 L45 93 L45 98 Z" opacity="0.7"/>
+                    <path d="M160 100 L155 102 L155 107 L152 103 L147 105 L150 100 L147 95 L152 97 L155 93 L155 98 Z" opacity="0.7"/>
+                </g>
+            </svg>
+            
+            <div class="header-text">
+                <h1 class="app-title">AI Assistant</h1>
+            </div>
+        </div>
+        
+        <div class="connection-status" id="connection-status">
+            <i class="fas fa-microchip status-local"></i>
+            <span>AI: Local Mode</span>
+        </div>
+    </header>
+
+    <!-- Main App Container -->
+    <div class="app-container">
+        <!-- Fixed Left Panel with Face - NOW PROPERLY FIXED -->
+        <div class="face-section">
+            <div class="face-container">
+                <div class="face-wrapper">
+                    <!-- Base face -->
+                    <img src="https://i.postimg.cc/jqgvh4sg/IMG-20251123-WA0008.jpg" 
+                         alt="AI Assistant" class="human-face" id="human-face">
+                    
+                    <!-- Eye Tracking System -->
+                    <div class="eye-container">
+                        <div class="eye eye-left">
+                            <div class="pupil" id="pupil-left"></div>
+                        </div>
+                        <div class="eye eye-right">
+                            <div class="pupil" id="pupil-right"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Expression overlays -->
+                    <div class="face-overlay" id="happy-overlay" style="background: linear-gradient(45deg, rgba(255,255,0,0.3), rgba(255,165,0,0.3));"></div>
+                    <div class="face-overlay" id="sad-overlay" style="background: linear-gradient(45deg, rgba(0,0,255,0.3), rgba(128,0,128,0.3));"></div>
+                    <div class="face-overlay" id="thinking-overlay" style="background: linear-gradient(45deg, rgba(128,0,128,0.3), rgba(75,0,130,0.3));"></div>
+                    <div class="face-overlay" id="excited-overlay" style="background: linear-gradient(45deg, rgba(255,0,0,0.3), rgba(255,165,0,0.3));"></div>
+                    
+                    <!-- Lip sync element -->
+                    <div class="mouth" id="mouth"></div>
+
+                    <!-- Status Indicators -->
+                    <div class="expression-indicator" id="expression-indicator">
+                        <i class="fas fa-smile" id="expression-icon"></i>
+                        <span id="expression-text">Ready</span>
+                    </div>
+                    
+                    <div class="robot-info" id="robot-info">
+                        <div>AI: <span id="ai-status">Local</span></div>
+                        <div>Voice: <span id="voice-status">Ready</span></div>
+                    </div>
+                    
+                    <div class="face-status" id="face-status">
+                        <div>Status: <span id="current-status">Online</span></div>
+                        <div>Mood: <span id="current-mood">Neutral</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controls Panel -->
+            <div class="controls-panel">
+                <div class="instruction-input">
+                    <input type="text" id="instruction-input" placeholder="Ask me anything...">
+                    <button id="execute-btn"><i class="fas fa-paper-plane"></i></button>
+                </div>
+                
+                <button id="voice-btn" class="voice-btn"><i class="fas fa-microphone"></i> Voice Command</button>
+                
+                <div class="status" id="status">Ready to assist you!</div>
+                
+                <div class="commands">
+                    <div class="command-btn" data-command="greet">
+                        <i class="fas fa-hand-wave"></i>
+                        <span>Greet</span>
+                    </div>
+                    <div class="command-btn" data-command="joke">
+                        <i class="fas fa-laugh"></i>
+                        <span>Joke</span>
+                    </div>
+                    <div class="command-btn" data-command="fact">
+                        <i class="fas fa-lightbulb"></i>
+                        <span>Fact</span>
+                    </div>
+                    <div class="command-btn" data-command="time">
+                        <i class="fas fa-clock"></i>
+                        <span>Time</span>
+                    </div>
+                    <div class="command-btn" data-command="calculate">
+                        <i class="fas fa-calculator"></i>
+                        <span>Calculate</span>
+                    </div>
+                    <div class="command-btn" data-command="weather">
+                        <i class="fas fa-cloud-sun"></i>
+                        <span>Weather</span>
+                    </div>
+                    <div class="command-btn" data-command="news">
+                        <i class="fas fa-newspaper"></i>
+                        <span>News</span>
+                    </div>
+                    <div class="command-btn" data-command="introduce">
+                        <i class="fas fa-robot"></i>
+                        <span>Introduce</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scrollable Right Content -->
+        <div class="content-section">
+            <!-- Chat Container -->
+            <div class="chat-container">
+                <div class="chat-messages" id="chat-messages">
+                    <div class="message robot-message">
+                        Hello! I'm your AI assistant. Choose your preferred AI provider below for enhanced capabilities!
+                        <div class="fallback-notice">
+                            <i class="fas fa-info-circle"></i> Groq API is free and super fast - recommended for testing!
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-input">
+                    <input type="text" id="chat-input" placeholder="Type your message here...">
+                    <button id="send-chat-btn"><i class="fas fa-paper-plane"></i></button>
+                </div>
+                <div class="conversation-controls">
+                    <button id="clear-chat-btn" class="conversation-btn"><i class="fas fa-trash"></i> Clear Chat</button>
+                    <button id="auto-chat-btn" class="conversation-btn"><i class="fas fa-robot"></i> Auto Chat</button>
+                </div>
+            </div>
+
+            <!-- Configuration Section - UPDATED -->
+            <div class="api-key-section">
+                <h3><i class="fas fa-key"></i> AI Configuration</h3>
+                
+                <!-- AI Provider Selection -->
+                <div class="provider-selection" style="margin-bottom: 15px;">
+                    <label>AI Provider:</label>
+                    <select id="ai-provider" style="width: 100%; padding: 8px; border-radius: 6px; margin-top: 5px; background: rgba(255,255,255,0.9); color: #333;">
+                        <option value="local">Local AI Only</option>
+                        <option value="groq">Groq (Llama 3 - Free & Fast)</option>
+                        <option value="openai">OpenAI (GPT-3.5/4)</option>
+                    </select>
+                </div>
+                
+                <!-- Provider Information -->
+                <div class="provider-info" id="provider-info">
+                    <strong>Groq (Recommended):</strong>
+                    <ul>
+                        <li>✅ Completely free during beta</li>
+                        <li>✅ No credit card required</li>
+                        <li>✅ Lightning fast responses</li>
+                        <li>Get API key: <a href="https://console.groq.com" target="_blank" style="color: #4ade80;">console.groq.com</a></li>
+                    </ul>
+                </div>
+                
+                <!-- API Key Input -->
+                <div id="api-key-fields" style="margin-top: 15px;">
+                    <div class="api-key-input">
+                        <input type="password" id="api-key-input" placeholder="No API key needed for local AI">
+                        <button id="save-api-key-btn"><i class="fas fa-save"></i> Save</button>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 8px; margin-top: 8px;">
+                    <button id="enable-voice-btn" class="voice-btn"><i class="fas fa-microphone-alt"></i> Enable Voice</button>
+                    <button id="continuous-mode-btn" class="voice-btn"><i class="fas fa-comments"></i> Continuous Mode</button>
+                </div>
+                
+                <div class="voice-test">
+                    <p><strong>Voice Test:</strong> Check if speech synthesis works</p>
+                    <button id="test-voice-btn" class="voice-test-btn voice-btn">
+                        <i class="fas fa-volume-up"></i> Test Voice
+                    </button>
+                    <div id="voice-debug" style="margin-top: 8px; font-size: 0.8rem;"></div>
+                </div>
+            </div>
+
+            <!-- Features Section (Hidden for professional look) -->
+            <div class="instructions" style="display: none;">
+                <h2>Features</h2>
+                <ul>
+                    <li><strong>Eye Tracking:</strong> Eyes follow your cursor movement</li>
+                    <li><strong>Real-time Expressions:</strong> Face changes based on conversation</li>
+                    <li><strong>Lip Syncing:</strong> Mouth moves when speaking</li>
+                    <li><strong>Voice Interaction:</strong> Speech recognition and text-to-speech</li>
+                    <li><strong>AI Integration:</strong> Multiple AI providers supported</li>
+                    <li><strong>Fallback System:</strong> Works offline with local AI</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const humanFace = document.getElementById('human-face');
+        const faceStatus = document.getElementById('face-status');
+        const expressionIndicator = document.getElementById('expression-indicator');
+        const expressionText = document.getElementById('expression-text');
+        const expressionIcon = document.getElementById('expression-icon');
+        const instructionInput = document.getElementById('instruction-input');
+        const executeBtn = document.getElementById('execute-btn');
+        const voiceBtn = document.getElementById('voice-btn');
+        const status = document.getElementById('status');
+        const commandBtns = document.querySelectorAll('.command-btn');
+        const chatMessages = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('chat-input');
+        const sendChatBtn = document.getElementById('send-chat-btn');
+        const clearChatBtn = document.getElementById('clear-chat-btn');
+        const autoChatBtn = document.getElementById('auto-chat-btn');
+        const apiKeyInput = document.getElementById('api-key-input');
+        const aiProviderSelect = document.getElementById('ai-provider');
+        const saveApiKeyBtn = document.getElementById('save-api-key-btn');
+        const connectionStatus = document.getElementById('connection-status');
+        const enableVoiceBtn = document.getElementById('enable-voice-btn');
+        const continuousModeBtn = document.getElementById('continuous-mode-btn');
+        const testVoiceBtn = document.getElementById('test-voice-btn');
+        const voiceDebug = document.getElementById('voice-debug');
+        const robotInfo = document.getElementById('robot-info');
+        const mouth = document.getElementById('mouth');
+        const pupilLeft = document.getElementById('pupil-left');
+        const pupilRight = document.getElementById('pupil-right');
+        const faceWrapper = document.querySelector('.face-wrapper');
+        const happyOverlay = document.getElementById('happy-overlay');
+        const sadOverlay = document.getElementById('sad-overlay');
+        const thinkingOverlay = document.getElementById('thinking-overlay');
+        const excitedOverlay = document.getElementById('excited-overlay');
+        const providerInfo = document.getElementById('provider-info');
+
+        // State variables - UPDATED for multi-provider support
+        let aiConfig = {
+            provider: localStorage.getItem('ai-provider') || 'local',
+            apiKey: localStorage.getItem('ai-api-key') || '',
+            enabled: false
+        };
+
+        let isTalking = false;
+        let currentExpression = 'neutral';
+        let voiceEnabled = true;
+        let continuousMode = false;
+        let autoChatActive = false;
+        let expressionTimeout = null;
+        let conversationHistory = [];
+        let autoChatInterval = null;
+        let speechSupported = false;
+        let blinkInterval = null;
+        let voiceRecognitionSupported = false;
+        let isListening = false;
+
+        // Enhanced Voice Recognition System
+        function initializeVoiceRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            
+            if (!SpeechRecognition) {
+                voiceRecognitionSupported = false;
+                voiceBtn.style.display = 'none';
+                updateVoiceStatus('Voice recognition not supported in this browser', 'error');
+                return null;
+            }
+
+            voiceRecognitionSupported = true;
+            
+            const recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+            recognition.maxAlternatives = 1;
+
+            recognition.onstart = () => {
+                isListening = true;
+                updateVoiceStatus('Listening... Speak now!', 'listening');
+                setExpression('thinking', 'Listening to you...');
+                voiceBtn.innerHTML = '<i class="fas fa-microphone-slash"></i> Stop Listening';
+                voiceBtn.style.background = '#f44336';
+            };
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                console.log('Voice recognized:', transcript);
+                
+                instructionInput.value = transcript;
+                updateVoiceStatus(`Heard: "${transcript}"`, 'ready');
+                
+                // Process after a short delay to show feedback
+                setTimeout(() => {
+                    processInstruction(transcript);
+                }, 500);
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                isListening = false;
+                resetVoiceButton();
+                
+                let errorMessage = 'Voice recognition error';
+                switch(event.error) {
+                    case 'not-allowed':
+                    case 'permission-denied':
+                        errorMessage = 'Microphone permission denied. Please allow microphone access.';
+                        break;
+                    case 'network':
+                        errorMessage = 'Network error occurred during voice recognition';
+                        break;
+                    case 'no-speech':
+                        errorMessage = 'No speech detected. Please try again.';
+                        break;
+                    case 'audio-capture':
+                        errorMessage = 'No microphone found. Please check your microphone.';
+                        break;
+                    default:
+                        errorMessage = `Voice error: ${event.error}`;
+                }
+                
+                updateVoiceStatus(errorMessage, 'error');
+                setExpression('sad', 'Voice error');
+            };
+
+            recognition.onend = () => {
+                isListening = false;
+                resetVoiceButton();
+                
+                // Only clear status if we're not in an error state
+                if (!status.textContent.includes('error') && !status.textContent.includes('denied')) {
+                    setTimeout(() => {
+                        updateVoiceStatus('Voice ready - Click to speak again', 'ready');
+                    }, 1000);
+                }
+            };
+
+            return recognition;
+        }
+
+        function updateVoiceStatus(message, type) {
+            // Remove any existing voice status elements
+            const existingStatus = document.querySelector('.voice-status');
+            if (existingStatus) {
+                existingStatus.remove();
+            }
+
+            const statusElement = document.createElement('div');
+            statusElement.className = `voice-status voice-${type}`;
+            statusElement.innerHTML = `<i class="fas fa-${getStatusIcon(type)}"></i> ${message}`;
+            
+            voiceDebug.appendChild(statusElement);
+        }
+
+        function getStatusIcon(type) {
+            switch(type) {
+                case 'listening': return 'ear-listen';
+                case 'ready': return 'check-circle';
+                case 'error': return 'exclamation-triangle';
+                default: return 'info-circle';
+            }
+        }
+
+        function resetVoiceButton() {
+            voiceBtn.innerHTML = '<i class="fas fa-microphone"></i> Voice Command';
+            voiceBtn.style.background = '';
+        }
+
+        // Initialize voice recognition
+        const recognition = initializeVoiceRecognition();
+
+        // Check speech synthesis support
+        function checkSpeechSupport() {
+            speechSupported = 'speechSynthesis' in window;
+            
+            if (!speechSupported) {
+                voiceDebug.innerHTML = '<span style="color: #ff6b6b">Speech synthesis not supported in this browser</span>';
+                enableVoiceBtn.disabled = true;
+                testVoiceBtn.disabled = true;
+                voiceEnabled = false;
+            } else {
+                voiceDebug.innerHTML = '<span style="color: #4ade80">Speech synthesis supported - Voice is ENABLED</span>';
+                voiceEnabled = true;
+                updateSystemStatus();
+            }
+        }
+
+        // Enhanced AI Knowledge Base
+        const knowledgeBase = {
+            greetings: {
+                patterns: ['hello', 'hi', 'hey', 'greetings', 'good morning', 'good afternoon', 'good evening'],
+                responses: [
+                    "Hello! I'm your AI assistant. How can I help you today?",
+                    "Hi there! I'm ready to assist you with anything you need.",
+                    "Greetings! I'm your AI companion here to help you.",
+                    "Hello! I can see you're ready to interact. What would you like to do?"
+                ],
+                expression: 'happy'
+            },
+            capabilities: {
+                patterns: ['what can you do', 'capabilities', 'features', 'help'],
+                responses: [
+                    "I'm a complete AI assistant! I can chat with you, understand voice commands, perform calculations, provide information, tell jokes, and much more!",
+                    "As your AI assistant, I offer intelligent conversations, voice recognition, task automation, and various utility functions.",
+                    "I'm equipped with speech synthesis, AI-powered conversations, and various functions to help you daily."
+                ],
+                expression: 'excited'
+            },
+            jokes: {
+                patterns: ['joke', 'funny', 'laugh', 'humor'],
+                responses: [
+                    "Why don't scientists trust atoms? Because they make up everything!",
+                    "Why did the scarecrow win an award? He was outstanding in his field!",
+                    "What do you call a fake noodle? An impasta!",
+                    "Why did the math book look so sad? Because it had too many problems!",
+                    "Why don't skeletons fight each other? They don't have the guts!"
+                ],
+                expression: 'happy'
+            },
+            facts: {
+                patterns: ['fact', 'interesting', 'tell me something', 'did you know'],
+                responses: [
+                    "Did you know? The shortest war in history was between Britain and Zanzibar in 1896. It lasted only 38 minutes!",
+                    "Interesting fact: Honey never spoils. Archaeologists have found pots of honey in ancient Egyptian tombs that are over 3,000 years old!",
+                    "Fun fact: Octopuses have three hearts! Two pump blood through the gills, while the third pumps it through the rest of the body.",
+                    "Did you know? Bananas are berries, but strawberries aren't!",
+                    "Amazing fact: A group of flamingos is called a 'flamboyance'!"
+                ],
+                expression: 'thinking'
+            },
+            time: {
+                patterns: ['time', 'clock', 'what time', 'current time'],
+                responses: [
+                    `The current time is ${new Date().toLocaleTimeString()}.`,
+                    `According to my clock, it's ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}.`,
+                    `It's ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} right now.`
+                ],
+                expression: 'neutral'
+            },
+            weather: {
+                patterns: ['weather', 'temperature', 'forecast'],
+                responses: [
+                    "I don't have real-time weather data, but I can help you find weather information online!",
+                    "For accurate weather forecasts, I'd recommend checking your local weather service.",
+                    "I specialize in conversation rather than weather forecasts, but I'm happy to chat about climate topics!"
+                ],
+                expression: 'neutral'
+            },
+            math: {
+                patterns: ['calculate', 'math', 'equation'],
+                calculate: function(question) {
+                    const mathRegex = /(\d+)\s*(plus|\+|\-|minus|times|\*|multiplied by|divided by|\/)\s*(\d+)/i;
+                    const match = question.match(mathRegex);
+                    
+                    if (match) {
+                        const num1 = parseInt(match[1]);
+                        const num2 = parseInt(match[3]);
+                        const operation = match[2].toLowerCase();
+                        
+                        let result;
+                        switch(operation) {
+                            case 'plus': case '+': 
+                                result = num1 + num2;
+                                return `The answer is ${num1} + ${num2} = ${result}`;
+                            case 'minus': case '-':
+                                result = num1 - num2;
+                                return `The answer is ${num1} - ${num2} = ${result}`;
+                            case 'times': case '*': case 'multiplied by':
+                                result = num1 * num2;
+                                return `The answer is ${num1} × ${num2} = ${result}`;
+                            case 'divided by': case '/':
+                                if (num2 === 0) return "I can't divide by zero!";
+                                result = num1 / num2;
+                                return `The answer is ${num1} ÷ ${num2} = ${result}`;
+                        }
+                    }
+                    return "I can help with calculations! Try something like 'calculate 15 plus 27'";
+                },
+                expression: 'thinking'
+            },
+            conversation: {
+                patterns: ['how are you', 'how do you feel', 'what do you think'],
+                responses: [
+                    "I'm doing great! Thanks for asking. I love having conversations with you.",
+                    "I'm feeling wonderful! Every interaction helps me learn and improve.",
+                    "I'm excited to be chatting with you! What's on your mind today?",
+                    "I'm doing well, thank you! I enjoy our conversations."
+                ],
+                expression: 'happy'
+            },
+            introduce: {
+                patterns: ['introduce', 'who are you', 'what are you'],
+                responses: [
+                    "I'm your AI assistant, a fully functional conversational AI with animated expressions and voice capabilities!",
+                    "I'm a real-time AI assistant designed to help you with various tasks and have engaging conversations.",
+                    "I'm an advanced AI assistant with eye tracking, facial expressions, and voice interaction capabilities."
+                ],
+                expression: 'excited'
+            },
+            news: {
+                patterns: ['news', 'headlines', 'latest'],
+                responses: [
+                    "I don't have real-time news access in my current mode, but I can discuss general topics with you!",
+                    "For the latest news, I'd recommend checking a news website. I'm better at conversations and calculations!",
+                    "I specialize in interactive conversations rather than news updates. What else can I help you with?"
+                ],
+                expression: 'neutral'
+            },
+            unknown: {
+                responses: [
+                    "That's an interesting question! I'm currently using my local knowledge base.",
+                    "I'm not sure about that specific topic in my current mode. Would you like to ask about something else?",
+                    "That's beyond my current knowledge. I specialize in conversations, calculations, and general assistance.",
+                    "I don't have information about that right now. Try asking me about general topics or enable online AI for more capabilities!"
+                ],
+                expression: 'confused'
+            }
+        };
+
+        // Initialize
+        function initializeApp() {
+            apiKeyInput.value = aiConfig.apiKey;
+            aiProviderSelect.value = aiConfig.provider;
+            updateAPIKeyPlaceholder();
+            updateProviderInfo();
+            checkAIStatus();
+            updateSystemStatus();
+            checkSpeechSupport();
+            startEyeTracking();
+            startBlinking();
+        }
+
+        // Eye Tracking System
+        function startEyeTracking() {
+            document.addEventListener('mousemove', trackEyes);
+            document.addEventListener('mouseleave', resetEyes);
+        }
+
+        function trackEyes(event) {
+            const faceRect = faceWrapper.getBoundingClientRect();
+            const faceCenterX = faceRect.left + faceRect.width / 2;
+            const faceCenterY = faceRect.top + faceRect.height / 2;
+            const cursorX = event.clientX;
+            const cursorY = event.clientY;
+            const deltaX = (cursorX - faceCenterX) / (faceRect.width / 2);
+            const deltaY = (cursorY - faceCenterY) / (faceRect.height / 2);
+            const maxMovement = 4;
+            const moveX = deltaX * maxMovement;
+            const moveY = deltaY * maxMovement;
+            
+            pupilLeft.style.transform = `translate(calc(-50% + ${moveX}px), calc(-50% + ${moveY}px))`;
+            pupilRight.style.transform = `translate(calc(-50% + ${moveX}px), calc(-50% + ${moveY}px))`;
+        }
+
+        function resetEyes() {
+            pupilLeft.style.transform = 'translate(-50%, -50%)';
+            pupilRight.style.transform = 'translate(-50%, -50%)';
+        }
+
+        // Blinking Animation
+        function startBlinking() {
+            const eyes = document.querySelectorAll('.eye');
+            
+            function blink() {
+                eyes.forEach(eye => {
+                    eye.style.height = '2px';
+                    setTimeout(() => {
+                        eye.style.height = '16px';
+                    }, 150);
+                });
+                
+                setTimeout(blink, 3000 + Math.random() * 5000);
+            }
+            
+            blink();
+        }
+
+        // System Functions
+        function checkAIStatus() {
+            const hasValidConfig = aiConfig.provider !== 'local' && aiConfig.apiKey && navigator.onLine;
+            aiConfig.enabled = hasValidConfig;
+            
+            if (hasValidConfig) {
+                const statusClass = `status-${aiConfig.provider}`;
+                connectionStatus.innerHTML = `<i class="fas fa-wifi ${statusClass}"></i><span>${aiConfig.provider.toUpperCase()} AI: Online</span>`;
+            } else if (aiConfig.provider === 'local') {
+                connectionStatus.innerHTML = '<i class="fas fa-microchip status-local"></i><span>AI: Local Mode</span>';
+            } else {
+                connectionStatus.innerHTML = '<i class="fas fa-microchip status-offline"></i><span>AI: Using Local</span>';
+            }
+        }
+
+        function updateSystemStatus() {
+            document.getElementById('ai-status').textContent = aiConfig.enabled ? aiConfig.provider.toUpperCase() : 'Local';
+            document.getElementById('voice-status').textContent = voiceEnabled ? 'Active' : 'Disabled';
+        }
+
+        function updateAPIKeyPlaceholder() {
+            const placeholders = {
+                'openai': 'OpenAI API Key (sk-...)',
+                'groq': 'Groq API Key (gsk_...)', 
+                'local': 'No API key needed for local AI'
+            };
+            apiKeyInput.placeholder = placeholders[aiConfig.provider];
+            
+            if (aiConfig.provider === 'local') {
+                apiKeyInput.disabled = true;
+                apiKeyInput.value = '';
+            } else {
+                apiKeyInput.disabled = false;
+            }
+        }
+
+        function updateProviderInfo() {
+            const providerInfoContent = {
+                'openai': `
+                    <strong>OpenAI:</strong>
+                    <ul>
+                        <li>✅ Advanced models (GPT-3.5, GPT-4)</li>
+                        <li>✅ High quality responses</li>
+                        <li>❌ Requires billing setup</li>
+                        <li>Get API key: <a href="https://platform.openai.com" target="_blank" style="color: #8b5cf6;">platform.openai.com</a></li>
+                    </ul>
+                `,
+                'groq': `
+                    <strong>Groq (Recommended):</strong>
+                    <ul>
+                        <li>✅ Completely free during beta</li>
+                        <li>✅ No credit card required</li>
+                        <li>✅ Lightning fast responses</li>
+                        <li>Get API key: <a href="https://console.groq.com" target="_blank" style="color: #10b981;">console.groq.com</a></li>
+                    </ul>
+                `,
+                'local': `
+                    <strong>Local AI:</strong>
+                    <ul>
+                        <li>✅ Always works offline</li>
+                        <li>✅ No API key needed</li>
+                        <li>✅ Basic responses only</li>
+                        <li>Configure online AI for enhanced capabilities</li>
+                    </ul>
+                `
+            };
+            
+            providerInfo.innerHTML = providerInfoContent[aiConfig.provider];
+        }
+
+        // Expression Management
+        function setExpression(expression, message = '', duration = 5000) {
+            currentExpression = expression;
+            updateExpressionIndicator();
+            
+            humanFace.className = 'human-face';
+            if (expression !== 'neutral') {
+                humanFace.classList.add(`face-${expression}`);
+            }
+            
+            happyOverlay.classList.remove('active');
+            sadOverlay.classList.remove('active');
+            thinkingOverlay.classList.remove('active');
+            excitedOverlay.classList.remove('active');
+            
+            switch(expression) {
+                case 'happy': happyOverlay.classList.add('active'); break;
+                case 'sad': sadOverlay.classList.add('active'); break;
+                case 'thinking': thinkingOverlay.classList.add('active'); break;
+                case 'excited': excitedOverlay.classList.add('active'); break;
+            }
+            
+            document.getElementById('current-mood').textContent = expression.charAt(0).toUpperCase() + expression.slice(1);
+            document.getElementById('current-status').textContent = message || 'Active';
+            
+            if (expressionTimeout) clearTimeout(expressionTimeout);
+            
+            if (expression !== 'neutral') {
+                expressionTimeout = setTimeout(() => {
+                    setExpression('neutral', 'Ready');
+                }, duration);
+            }
+        }
+
+        function updateExpressionIndicator() {
+            expressionText.textContent = currentExpression.charAt(0).toUpperCase() + currentExpression.slice(1);
+            
+            switch(currentExpression) {
+                case 'happy': expressionIcon.className = 'fas fa-smile'; break;
+                case 'sad': expressionIcon.className = 'fas fa-frown'; break;
+                case 'thinking': expressionIcon.className = 'fas fa-brain'; break;
+                case 'excited': expressionIcon.className = 'fas fa-star'; break;
+                case 'confused': expressionIcon.className = 'fas fa-question'; break;
+                case 'surprised': expressionIcon.className = 'fas fa-surprise'; break;
+                default: expressionIcon.className = 'fas fa-meh';
+            }
+        }
+
+        // AI Provider Selection Handler
+        aiProviderSelect.addEventListener('change', function() {
+            aiConfig.provider = this.value;
+            updateAPIKeyPlaceholder();
+            updateProviderInfo();
+            checkAIStatus();
+            updateSystemStatus();
+            
+            status.textContent = `Switched to ${aiConfig.provider.toUpperCase()} mode`;
+            setExpression('happy', 'Provider changed');
+        });
+
+        // Save API Key Handler
+        saveApiKeyBtn.addEventListener('click', () => {
+            aiConfig.apiKey = apiKeyInput.value.trim();
+            
+            if (aiConfig.provider !== 'local' && aiConfig.apiKey) {
+                localStorage.setItem('ai-provider', aiConfig.provider);
+                localStorage.setItem('ai-api-key', aiConfig.apiKey);
+                status.textContent = `${aiConfig.provider.toUpperCase()} API key saved!`;
+                setExpression('happy', 'API key saved');
+            } else if (aiConfig.provider === 'local') {
+                localStorage.removeItem('ai-provider');
+                localStorage.removeItem('ai-api-key');
+                status.textContent = 'Using local AI only';
+                setExpression('neutral', 'Local AI');
+            } else {
+                localStorage.removeItem('ai-provider');
+                localStorage.removeItem('ai-api-key');
+                status.textContent = 'API key removed';
+                setExpression('neutral', 'Local AI');
+            }
+            
+            checkAIStatus();
+            updateSystemStatus();
+        });
+
+        // Enhanced Voice Button Handler
+        voiceBtn.addEventListener('click', () => {
+            if (!voiceRecognitionSupported) {
+                updateVoiceStatus('Voice recognition not supported in this browser', 'error');
+                return;
+            }
+            
+            if (!voiceEnabled) {
+                updateVoiceStatus('Please enable voice recognition first', 'error');
+                return;
+            }
+            
+            if (isListening) {
+                // Stop listening
+                recognition.stop();
+                isListening = false;
+                resetVoiceButton();
+                updateVoiceStatus('Voice recognition stopped', 'ready');
+                setExpression('neutral', 'Ready');
+            } else {
+                // Start listening
+                try {
+                    recognition.start();
+                    updateVoiceStatus('Listening... Speak now!', 'listening');
+                    setExpression('thinking', 'Listening...');
+                } catch (error) {
+                    console.error('Error starting voice recognition:', error);
+                    updateVoiceStatus('Error starting voice recognition', 'error');
+                    setExpression('sad', 'Voice error');
+                }
+            }
+        });
+
+        // Other event listeners
+        executeBtn.addEventListener('click', () => {
+            const instruction = instructionInput.value.trim();
+            if (instruction) processInstruction(instruction);
+        });
+
+        instructionInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const instruction = instructionInput.value.trim();
+                if (instruction) processInstruction(instruction);
+            }
+        });
+
+        commandBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const command = btn.getAttribute('data-command');
+                processInstruction(command);
+            });
+        });
+
+        sendChatBtn.addEventListener('click', sendChatMessage);
+        
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendChatMessage();
+            }
+        });
+
+        clearChatBtn.addEventListener('click', () => {
+            chatMessages.innerHTML = '';
+            conversationHistory = [];
+            addChatMessage("Conversation cleared. Let's start fresh!", "robot");
+            setExpression('neutral', 'Ready');
+        });
+
+        autoChatBtn.addEventListener('click', toggleAutoChat);
+
+        enableVoiceBtn.addEventListener('click', () => {
+            voiceEnabled = !voiceEnabled;
+            enableVoiceBtn.innerHTML = voiceEnabled ? 
+                '<i class="fas fa-microphone-slash"></i> Disable Voice' : 
+                '<i class="fas fa-microphone-alt"></i> Enable Voice';
+            updateSystemStatus();
+            status.textContent = voiceEnabled ? 'Voice recognition enabled!' : 'Voice recognition disabled';
+            setExpression(voiceEnabled ? 'happy' : 'neutral', voiceEnabled ? 'Voice enabled' : 'Voice disabled');
+            
+            if (voiceEnabled) {
+                updateVoiceStatus('Voice enabled. Click "Voice Command" to speak.', 'ready');
+            } else {
+                updateVoiceStatus('Voice disabled', 'error');
+            }
+        });
+
+        testVoiceBtn.addEventListener('click', () => {
+            if (!speechSupported) {
+                updateVoiceStatus('Speech synthesis not supported', 'error');
+                return;
+            }
+            
+            updateVoiceStatus('Testing voice... Speaking now', 'listening');
+            speak("Hello! This is a voice test. If you can hear me, the speech synthesis is working correctly!");
+        });
+
+        continuousModeBtn.addEventListener('click', () => {
+            continuousMode = !continuousMode;
+            continuousModeBtn.innerHTML = continuousMode ? 
+                '<i class="fas fa-comment-slash"></i> Stop Continuous' : 
+                '<i class="fas fa-comments"></i> Continuous Mode';
+            status.textContent = continuousMode ? 'Continuous mode enabled!' : 'Continuous mode disabled';
+            setExpression(continuousMode ? 'excited' : 'neutral', continuousMode ? 'Continuous mode' : 'Ready');
+        });
+
+        // Auto Chat Functionality
+        function toggleAutoChat() {
+            autoChatActive = !autoChatActive;
+            autoChatBtn.innerHTML = autoChatActive ? 
+                '<i class="fas fa-stop"></i> Stop Auto Chat' : 
+                '<i class="fas fa-robot"></i> Auto Chat';
+            
+            if (autoChatActive) {
+                status.textContent = 'Auto chat mode activated!';
+                setExpression('excited', 'Auto chat active');
+                startAutoChat();
+            } else {
+                status.textContent = 'Auto chat mode deactivated';
+                setExpression('neutral', 'Ready');
+                stopAutoChat();
+            }
+        }
+
+        function startAutoChat() {
+            const autoQuestions = [
+                "What's your favorite hobby?",
+                "Tell me about your day!",
+                "What kind of music do you like?",
+                "Do you have any pets?",
+                "What's your favorite food?",
+                "Have you traveled anywhere interesting?",
+                "What do you do for fun?",
+                "What's the best book you've read recently?"
+            ];
+            
+            autoChatInterval = setInterval(() => {
+                if (autoChatActive) {
+                    const randomQuestion = autoQuestions[Math.floor(Math.random() * autoQuestions.length)];
+                    addChatMessage(randomQuestion, "robot");
+                    setExpression('thinking', 'Asking question');
+                    
+                    // Simulate user response after a delay
+                    setTimeout(() => {
+                        if (autoChatActive) {
+                            const userResponses = [
+                                "That's an interesting question!",
+                                "I'm not sure how to answer that.",
+                                "Let me think about that for a moment.",
+                                "That's a great topic to discuss!",
+                                "I'd love to share more about that."
+                            ];
+                            const randomResponse = userResponses[Math.floor(Math.random() * userResponses.length)];
+                            addChatMessage(randomResponse, "user");
+                            
+                            // AI response after user "response"
+                            setTimeout(() => {
+                                if (autoChatActive) {
+                                    const aiFollowUps = [
+                                        "Thanks for sharing that with me!",
+                                        "That sounds really interesting!",
+                                        "I appreciate you telling me that.",
+                                        "That's wonderful to hear!",
+                                        "I'd love to learn more about that sometime."
+                                    ];
+                                    const randomFollowUp = aiFollowUps[Math.floor(Math.random() * aiFollowUps.length)];
+                                    robotResponse(randomFollowUp);
+                                }
+                            }, 2000);
+                        }
+                    }, 3000);
+                }
+            }, 8000);
+        }
+
+        function stopAutoChat() {
+            if (autoChatInterval) {
+                clearInterval(autoChatInterval);
+                autoChatInterval = null;
+            }
+        }
+
+        // Main Processing Function
+        function processInstruction(instruction) {
+            instruction = instruction.toLowerCase();
+            status.textContent = `Processing: "${instruction}"`;
+            setExpression('thinking', 'Processing...');
+            
+            conversationHistory.push({ role: "user", content: instruction });
+            
+            let matched = false;
+            for (const [category, data] of Object.entries(knowledgeBase)) {
+                if (data.patterns) {
+                    for (const pattern of data.patterns) {
+                        if (instruction.includes(pattern)) {
+                            matched = true;
+                            if (category === 'math' && data.calculate) {
+                                const response = data.calculate(instruction);
+                                setExpression(data.expression, 'Calculating...');
+                                robotResponse(response);
+                            } else {
+                                const response = data.responses[Math.floor(Math.random() * data.responses.length)];
+                                setExpression(data.expression, 'Responding...');
+                                robotResponse(response);
+                            }
+                            break;
+                        }
+                    }
+                    if (matched) break;
+                }
+            }
+            
+            if (!matched) {
+                if (aiConfig.enabled) {
+                    sendToAI(instruction);
+                } else {
+                    const response = processWithFallback(instruction);
+                    robotResponse(response);
+                }
+            }
+            
+            instructionInput.value = '';
+        }
+
+        function sendChatMessage() {
+            const message = chatInput.value.trim();
+            if (!message) return;
+            
+            addChatMessage(message, "user");
+            chatInput.value = '';
+            
+            // Add to conversation history
+            conversationHistory.push({ role: "user", content: message });
+            
+            // Show typing indicator
+            const typingIndicator = document.createElement('div');
+            typingIndicator.className = 'message robot-message typing-indicator';
+            typingIndicator.innerHTML = '<span></span><span></span><span></span>';
+            chatMessages.appendChild(typingIndicator);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            setExpression('thinking', 'Thinking...');
+            
+            // Send to appropriate system
+            if (aiConfig.enabled) {
+                sendToAI(message);
+            } else {
+                setTimeout(() => {
+                    removeTypingIndicator();
+                    const response = processWithFallback(message);
+                    robotResponse(response);
+                }, 1000);
+            }
+        }
+
+        // AI API Functions
+        async function sendToAI(message) {
+            if (!aiConfig.enabled || !navigator.onLine) {
+                const response = processWithFallback(message);
+                robotResponse(response);
+                return;
+            }
+            
+            try {
+                let aiResponse;
+                
+                switch(aiConfig.provider) {
+                    case 'openai':
+                        aiResponse = await callOpenAI(message);
+                        break;
+                    case 'groq':
+                        aiResponse = await callGroq(message);
+                        break;
+                    default:
+                        aiResponse = processWithFallback(message);
+                }
+                
+                robotResponse(aiResponse);
+                
+            } catch (error) {
+                console.error('AI API error:', error);
+                aiConfig.enabled = false;
+                checkAIStatus();
+                const response = processWithFallback(message);
+                robotResponse(response);
+                status.textContent = 'Using local AI system';
+                setExpression('sad', 'AI system offline');
+            }
+        }
+
+        // Groq API Function
+        async function callGroq(message) {
+            const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${aiConfig.apiKey}`
+                },
+                body: JSON.stringify({
+                    model: "llama3-8b-8192",
+                    messages: [
+                        { 
+                            role: "system", 
+                            content: "You are a friendly AI assistant with animated facial expressions. Keep responses under 200 characters and be conversational." 
+                        },
+                        { role: "user", content: message }
+                    ],
+                    max_tokens: 250,
+                    temperature: 0.7
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Groq API error: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            return data.choices[0].message.content;
+        }
+
+        // OpenAI API Function
+        async function callOpenAI(message) {
+            const messages = [
+                { 
+                    role: "system", 
+                    content: "You are a friendly AI assistant with animated facial expressions. Keep responses under 200 characters and be conversational." 
+                },
+                ...conversationHistory.slice(-6)
+            ];
+            
+            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${aiConfig.apiKey}`
+                },
+                body: JSON.stringify({
+                    model: "gpt-3.5-turbo",
+                    messages: messages,
+                    max_tokens: 200,
+                    temperature: 0.7
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`OpenAI API error: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            return data.choices[0].message.content;
+        }
+
+        // Response System
+        function robotResponse(message) {
+            removeTypingIndicator();
+            addChatMessage(message, "robot");
+            conversationHistory.push({ role: "assistant", content: message });
+            
+            const expression = analyzeExpressionFromText(message);
+            setExpression(expression, 'Responding');
+            
+            speak(message);
+            
+            if (continuousMode) {
+                setTimeout(() => {
+                    setExpression('thinking', 'Waiting for response');
+                    status.textContent = 'Waiting for your response...';
+                }, 2000);
+            }
+        }
+
+        function analyzeExpressionFromText(text) {
+            const lowerText = text.toLowerCase();
+            
+            // Analyze sentiment and content to determine expression
+            if (lowerText.includes('?') || lowerText.includes('how') || lowerText.includes('what') || lowerText.includes('why')) {
+                return 'thinking';
+            }
+            
+            if (lowerText.includes('!') || lowerText.includes('amazing') || lowerText.includes('wow') || lowerText.includes('great')) {
+                return 'excited';
+            }
+            
+            if (lowerText.includes('sad') || lowerText.includes('sorry') || lowerText.includes('unfortunately')) {
+                return 'sad';
+            }
+            
+            if (lowerText.includes('surprise') || lowerText.includes('unexpected') || lowerText.includes('shock')) {
+                return 'surprised';
+            }
+            
+            if (lowerText.includes('confused') || lowerText.includes('not sure') || lowerText.includes('don\'t know')) {
+                return 'confused';
+            }
+            
+            // Default to happy for positive responses
+            return 'happy';
+        }
+
+        function processWithFallback(message) {
+            const lowerMessage = message.toLowerCase();
+            
+            // Check knowledge base
+            for (const [category, data] of Object.entries(knowledgeBase)) {
+                if (data.patterns) {
+                    for (const pattern of data.patterns) {
+                        if (lowerMessage.includes(pattern)) {
+                            if (category === 'math' && data.calculate) {
+                                return data.calculate(lowerMessage);
+                            }
+                            return data.responses[Math.floor(Math.random() * data.responses.length)];
+                        }
+                    }
+                }
+            }
+            
+            // Use unknown responses
+            return knowledgeBase.unknown.responses[Math.floor(Math.random() * knowledgeBase.unknown.responses.length)];
+        }
+
+        function removeTypingIndicator() {
+            const typingIndicator = document.querySelector('.typing-indicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+
+        function addChatMessage(message, sender) {
+            const messageElement = document.createElement('div');
+            messageElement.className = `message ${sender}-message`;
+            messageElement.textContent = message;
+            
+            if (sender === 'robot' && !aiConfig.enabled && Math.random() > 0.7) {
+                const notice = document.createElement('div');
+                notice.className = 'fallback-notice';
+                notice.innerHTML = '<i class="fas fa-microchip"></i> Local AI Response';
+                messageElement.appendChild(notice);
+            } else if (sender === 'robot' && aiConfig.enabled) {
+                const notice = document.createElement('div');
+                notice.className = 'fallback-notice';
+                notice.style.background = 'rgba(76, 175, 80, 0.2)';
+                notice.style.borderLeftColor = '#4ade80';
+                notice.innerHTML = `<i class="fas fa-bolt"></i> ${aiConfig.provider.toUpperCase()} AI Response`;
+                messageElement.appendChild(notice);
+            }
+            
+            chatMessages.appendChild(messageElement);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Text-to-Speech with lip sync
+        function speak(text) {
+            if (!speechSupported) return;
+            
+            if (window.speechSynthesis.speaking) {
+                window.speechSynthesis.cancel();
+            }
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 0.9;
+            utterance.pitch = 1.1;
+            utterance.volume = 1.0;
+            
+            const voices = window.speechSynthesis.getVoices();
+            if (voices.length > 0) {
+                const femaleVoice = voices.find(voice => 
+                    voice.name.includes('Female') || 
+                    voice.name.includes('female') ||
+                    voice.name.includes('Samantha') ||
+                    voice.name.includes('Karen') ||
+                    voice.name.includes('Victoria')
+                );
+                if (femaleVoice) utterance.voice = femaleVoice;
+            }
+            
+            utterance.onstart = () => {
+                isTalking = true;
+                status.textContent = 'Speaking...';
+                mouth.classList.add('talking');
+                humanFace.classList.add('face-talking');
+            };
+            
+            utterance.onend = () => {
+                isTalking = false;
+                status.textContent = 'Ready';
+                mouth.classList.remove('talking');
+                humanFace.classList.remove('face-talking');
+            };
+            
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // Initialize with greeting
+        setTimeout(() => {
+            addChatMessage("Hello! I'm your real-time AI assistant. Choose your preferred AI provider in the settings below. Groq is recommended for free, fast responses!", "robot");
+            updateVoiceStatus('Voice system ready. Click "Voice Command" to speak.', 'ready');
+        }, 1000);
+
+        // Initialize the app
+        initializeApp();
+
+        // Service Worker Registration for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js')
+                .then(function(registration) {
+                    console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                })
+                .catch(function(err) {
+                    console.log('ServiceWorker registration failed: ', err);
+                });
+            });
+        }
+    </script>
+</body>
+</html>
